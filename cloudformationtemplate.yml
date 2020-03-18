@@ -4,12 +4,29 @@ Parameters:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
 Resources:
+  SGEC2:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: vpc-081c6760
+      GroupDescription: EC2 Security Group
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          SourceSecurityGroupId: !Ref SGLoadBalancer
+  SGLoadBalancer:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: vpc-081c6760
+      GroupDescription: LoadBalancer Security Group
   MyEC2Instance:
     Type: "AWS::EC2::Instance"
     Properties:
       ImageId: !Ref LatestAmiId
       InstanceType: t2.micro
       KeyName: SamuliDemoKey
+      SecurityGroupIds:
+        - !Ref SGEC2
       BlockDeviceMappings:
         - DeviceName: /dev/sdm
           Ebs:
@@ -28,6 +45,8 @@ Resources:
   MyLoadBalancer:
     Type: AWS::ElasticLoadBalancing::LoadBalancer
     Properties:
+      SecurityGroups:
+        - !Ref SGLoadBalancer
       AvailabilityZones:
         - "eu-west-2a"
       Instances: [!Ref MyEC2Instance]
@@ -70,7 +89,7 @@ Resources:
       Bucket: !Ref S3Bucket
 Outputs:
   LoadBalancerDNSAddress:
-    Value: !Ref MyLoadBalancer
+    Value: !GetAtt MyLoadBalancer.DNSName
   WebsiteURL:
     Value: !GetAtt
       - S3Bucket
