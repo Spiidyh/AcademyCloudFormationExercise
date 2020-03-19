@@ -42,24 +42,33 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: Samuli-Queue
-  MyLoadBalancer:
-    Type: AWS::ElasticLoadBalancing::LoadBalancer
+  MyListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref MyTargetGroup
+      LoadBalancerArn: !Ref MyLoadBalancer
+      Port: 80
+      Protocol: "HTTP"
+  MyTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckEnabled: true
+      Port: 80
+      Protocol: "HTTP"
+      TargetType: instance
+      VpcId: vpc-081c6760
+  MyLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Type: application
       SecurityGroups:
         - !Ref SGLoadBalancer
-      AvailabilityZones:
-        - "eu-west-2a"
-      Instances: [!Ref MyEC2Instance]
-      Listeners:
-        - LoadBalancerPort: '80'
-          InstancePort: '80'
-          Protocol: HTTP
-      HealthCheck:
-        Target: HTTP:80/
-        HealthyThreshold: '3'
-        UnhealthyThreshold: '5'
-        Interval: '30'
-        Timeout: '5'
+      Scheme: internet-facing
+      Subnets:
+        - subnet-9b04d8d7
+        - subnet-9d3c71f4
   S3Bucket:
     Type: AWS::S3::Bucket
     Properties:
